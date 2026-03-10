@@ -1,0 +1,13 @@
+from fastapi import FastAPI
+
+app = FastAPI(
+    title="Sistema de Gestion Multirol",
+    version="0.1.0",
+    description= ( "Una aplicación para gestionar múltiples roles y tareas de usuario de un sistema. "
+    "Permite a los usuarios crear, editar y eliminar tareas. "
+    "También incluye un sistema de notificaciones para mantener a los usuarios informados sobre las tareas asignadas y su progreso."),
+)
+
+@app.get("/")
+def root():
+    return {"message": "Bienvenido al Sistema de Gestion Multirol"}
