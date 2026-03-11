@@ -15,3 +15,5 @@ class Role(Base):
 
     # Relación con User
     user = relationship("User", back_populates="roles")
+    # Relación con Task
+    tasks = relationship("Task", back_populates="role", cascade="all, delete-orphan")

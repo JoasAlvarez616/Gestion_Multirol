@@ -1,5 +1,6 @@
 from app.database.database import Base
 from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.orm import relationship
 from datetime import datetime
 
 class User(Base):
@@ -10,3 +11,5 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    roles = relationship("Role", back_populates="user", cascade="all, delete-orphan")

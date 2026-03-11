@@ -34,4 +34,4 @@ class Task(Base):
     role = relationship("Role", back_populates="tasks")
 
     # Relación con SubTasks
-    subtasks = relationship("SubTask", back_populates="task")
+    subtasks = relationship("SubTask", back_populates="task", cascade="all, delete-orphan")
