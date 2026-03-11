@@ -1,7 +1,8 @@
+# app/models/task.py
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from app.database import Base
+from app.database.database import Base
 from app.models.role import Role
 import enum
 
@@ -30,4 +31,7 @@ class Task(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relación con Role
-    role = relationship("Role", backref="tasks")
+    role = relationship("Role", back_populates="tasks")
+
+    # Relación con SubTasks
+    subtasks = relationship("SubTask", back_populates="task")

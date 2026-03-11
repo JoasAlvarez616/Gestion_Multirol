@@ -1,7 +1,8 @@
+# app/models/subtask.py
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from app.database import Base
+from app.database.database import Base
 from app.models.task import Task
 
 class SubTask(Base):
@@ -14,4 +15,4 @@ class SubTask(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relación con Task
-    task = relationship("Task", backref="subtasks")
+    task = relationship("Task", back_populates="subtasks")

@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
-from datetime import datetime
-from sqlalchemy.orm import relationship
-from app.database import Base
+from app.database.database import Base
 from app.models.user import User
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
+from datetime import datetime
 
 class Role(Base):
     __tablename__ = "roles"
@@ -14,4 +14,4 @@ class Role(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relación con User
-    user = relationship("User", backref="roles")
+    user = relationship("User", back_populates="roles")
