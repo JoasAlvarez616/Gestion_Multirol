@@ -1,7 +1,7 @@
 # app/models/task.py
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database.database import Base
 from app.models.role import Role
 import enum
@@ -25,10 +25,10 @@ class Task(Base):
     description = Column(String, nullable=True)
     status = Column(Enum(TaskStatus), default=TaskStatus.pending)
     priority = Column(Enum(TaskPriority), default=TaskPriority.medium)
-    start_date = Column(DateTime, default=datetime.utcnow)
+    start_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     due_date = Column(DateTime, nullable=True)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relación con Role
     role = relationship("Role", back_populates="tasks")

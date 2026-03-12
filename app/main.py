@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from app.routers import user
+from app import models
 
 app = FastAPI(
     title="Sistema de Gestion Multirol",
@@ -11,3 +13,5 @@ app = FastAPI(
 @app.get("/")
 def root():
     return {"message": "Bienvenido al Sistema de Gestion Multirol"}
+
+app.include_router(user.router)
