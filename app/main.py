@@ -1,19 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from app.security.security import create_access_token, verify_token
 from pydantic import BaseModel
-from datetime import datetime, timedelta
-import jwt
 
 from app.routers import user, auth
 from app.database.database import engine, Base
 
-
-# ==============================
-# Configuración de JWT
-# ==============================
-SECRET_KEY = "R2Q7D7Z1"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # ==============================
 # Inicializar FastAPI
@@ -34,37 +25,16 @@ Base.metadata.create_all(bind=engine)
 # ==============================
 # Schemas
 # ==============================
+
 class Login(BaseModel):
     username: str
     password: str
 
-# ==============================
-# Security
-# ==============================
-oauth2_scheme= OAuth2PasswordBearer(tokenUrl="/login/")
-
-def verify_token(token: str = Depends(oauth2_scheme)):
-    """
-    Funcion reusable para validar token JWT.
-    Devuelve el payload si el token es válido, o lanza una excepción si no lo es.
-    """
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token expirado"
-        )
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido"
-        )
 
 # ==============================
 # Endpoints
 # ==============================
+
 @app.get("/")
 def root():
     return {"message": "Bienvenido al Sistema de Gestion Multirol"}
@@ -78,11 +48,7 @@ def login(data:Login):
             detail="Nombre o contraseña incorrectos"
         )
 
-    # Generar token
-    expires = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
-    payload = {"sub": data.username, "exp": expires}
-    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    token= create_access_token({"sub": data.username})
     return {"access_token": token, "token_type": "bearer"}
 
 @app.get("/users/")
