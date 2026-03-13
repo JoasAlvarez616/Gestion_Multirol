@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Depends, Security, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import jwt
@@ -41,7 +41,26 @@ class Login(BaseModel):
 # ==============================
 # Security
 # ==============================
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="Login")
+oauth2_scheme= OAuth2PasswordBearer(tokenUrl="/login/")
+
+def verify_token(token: str = Depends(oauth2_scheme)):
+    """
+    Funcion reusable para validar token JWT.
+    Devuelve el payload si el token es válido, o lanza una excepción si no lo es.
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expirado"
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido"
+        )
 
 # ==============================
 # Endpoints
@@ -51,9 +70,9 @@ def root():
     return {"message": "Bienvenido al Sistema de Gestion Multirol"}
 
 @app.post("/login/")
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
+def login(data:Login):
     # Aquí validas usuario y contraseña (temporal hardcode)
-    if form_data.username != "joas" or form_data.password != "1234":
+    if data.username != "joas" or data.password != "1234":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Nombre o contraseña incorrectos"
@@ -61,24 +80,16 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
     # Generar token
     expires = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload = {"sub": form_data.username, "exp": expires}
+
+    payload = {"sub": data.username, "exp": expires}
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token, "token_type": "bearer"}
 
 @app.get("/users/")
-def read_users(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token expirado"
-        )
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token inválido"
-        )
+def read_users(payload: dict = Depends(verify_token)):
+    """
+    Endpoint protegido: solo accesible con un token válido.
+    """
     return {"msg": "Token válido!", "user": payload["sub"]}
 
 # ==============================
