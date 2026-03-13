@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.routers import user
+from app.database.database import engine, Base
 from app import models
 
 app = FastAPI(
@@ -9,6 +10,8 @@ app = FastAPI(
     "Permite a los usuarios crear, editar y eliminar tareas. "
     "También incluye un sistema de notificaciones para mantener a los usuarios informados sobre las tareas asignadas y su progreso."),
 )
+
+Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 def root():
