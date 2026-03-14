@@ -27,7 +27,7 @@ class Task(Base):
     priority = Column(Enum(TaskPriority), default=TaskPriority.medium)
     start_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     due_date = Column(DateTime, nullable=True)
-    lifecontext_id = Column(Integer, ForeignKey("lifecontexts.id"), nullable=False)
+    lifecontext_id = Column(Integer, ForeignKey("contexts.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relación con Context

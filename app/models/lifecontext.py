@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from app.database.database import Base
 
 class LifeContext(Base):
-    __tablename__ = "lifecontexts"
+    __tablename__ = "contexts"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
@@ -12,6 +12,6 @@ class LifeContext(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    user = relationship("User", back_populates="LifeContexts")
+    user = relationship("User", back_populates="LifeContext")
 
     tasks = relationship("Task", back_populates="LifeContext", cascade="all, delete-orphan")
