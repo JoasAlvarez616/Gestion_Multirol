@@ -12,6 +12,6 @@ class LifeContext(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    user = relationship("User", back_populates="LifeContext")
+    user = relationship("User", back_populates="contexts")
 
-    tasks = relationship("Task", back_populates="LifeContext", cascade="all, delete-orphan")
+    tasks = relationship("Task", back_populates="context", cascade="all, delete-orphan")

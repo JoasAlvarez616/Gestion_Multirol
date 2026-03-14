@@ -12,4 +12,4 @@ class User(Base):
     password = Column(String, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    lifecontexts = relationship("LifeContext", back_populates="user", cascade="all, delete-orphan")
+    contexts = relationship("LifeContext", back_populates="user", cascade="all, delete-orphan")
