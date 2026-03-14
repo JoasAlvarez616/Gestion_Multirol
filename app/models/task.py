@@ -3,7 +3,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from app.database.database import Base
-from app.models.role import Role
+from app.models.lifecontext import LifeContext
 import enum
 
 # Enums para status y priority
@@ -27,11 +27,11 @@ class Task(Base):
     priority = Column(Enum(TaskPriority), default=TaskPriority.medium)
     start_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     due_date = Column(DateTime, nullable=True)
-    role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
+    lifecontext_id = Column(Integer, ForeignKey("lifecontexts.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    # Relación con Role
-    role = relationship("Role", back_populates="tasks")
+    # Relación con Context
+    lifecontext = relationship("LifeContext", back_populates="tasks")
 
     # Relación con SubTasks
     subtasks = relationship("SubTask", back_populates="task", cascade="all, delete-orphan")

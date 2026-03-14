@@ -1,4 +1,4 @@
 from .user import User
-from .role import Role
+from .lifecontext import LifeContext
 from .task import Task
 from .subtask import SubTask

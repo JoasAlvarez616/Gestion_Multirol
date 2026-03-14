@@ -1,0 +1,17 @@
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from datetime import datetime, timezone
+from sqlalchemy.orm import relationship
+from app.database.database import Base
+
+class LifeContext(Base):
+    __tablename__ = "lifecontexts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user = relationship("User", back_populates="LifeContexts")
+
+    tasks = relationship("Task", back_populates="LifeContext", cascade="all, delete-orphan")
