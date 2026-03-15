@@ -14,27 +14,40 @@ router = APIRouter(
     tags=["tasks"],
 )
 
+
 @router.post("/", response_model=TaskResponse)
 def create_task(
-        task: TaskCreate,
-        db: Session = Depends(get_db),
-        current_user: User = Depends(get_current_user)):
+    task: TaskCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)):
 
-    # Verificar que el contexto de vida existe y pertenece al usuario
+    # Verificamos que el contexto al que se asigna la tarea pertenece al usuario actual
     context = db.query(LifeContext).filter(
         LifeContext.id == task.context_id,
-        LifeContext.user_id == current_user.id).first()
-
+        LifeContext.user_id == current_user.id
+        ).first()
+    
     if not context:
-        raise HTTPException(status_code=404, detail="No puedes crear tareas en este contexto")
+        raise HTTPException(status_code=400,
+                            detail="El contexto no existe o no pertenece al usuario")
+    
+    #Calcular siguiente numero dentro del contexto
+    last_task = db.query(Task)\
+        .filter(Task.context_id == task.context_id)\
+            .order_by(Task.number.desc())\
+                .first()
 
-    # Crear la tarea
+    next_number = 1 if not last_task else last_task.context_task_number + 1
+
+    # Creamos la tarea
     db_task = Task(
         title=task.title,
         description=task.description,
+        status=task.status,
         priority=task.priority,
         due_date=task.due_date,
-        context_id=task.context_id
+        context_id=task.context_id,
+        context_task_number=next_number
     )
 
     db.add(db_task)

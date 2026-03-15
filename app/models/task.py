@@ -28,6 +28,7 @@ class Task(Base):
     start_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     due_date = Column(DateTime, nullable=True)
     context_id = Column(Integer, ForeignKey("contexts.id"), nullable=False)
+    context_task_number = Column(Integer, nullable=False)  # Número de tarea dentro del contexto
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relación con Context
