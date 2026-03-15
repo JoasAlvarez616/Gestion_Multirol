@@ -22,11 +22,20 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     context_id: int
 
+class TaskUpdateStatus(BaseModel):
+    status: TaskStatus
+
 class TaskResponse(TaskBase):
     id: int
     status: TaskStatus
     context_id: int
     created_at: datetime
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    priority: Optional[TaskPriority] = None
+    due_date: Optional[datetime] = None
 
     class Config:
         from_attributes = True
