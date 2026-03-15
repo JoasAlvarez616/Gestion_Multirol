@@ -8,7 +8,7 @@ from app.models.task import Task
 from app.models.lifecontext import LifeContext
 from app.routers.user import get_current_user
 from app.models.user import User
-from app.schemas.subtask import SubtaskCreate, SubtaskResponse
+from app.schemas.subtask import SubtaskCreate, SubtaskResponse, SubtaskBase
 from app.security.dependencies import get_current_user
 
 router = APIRouter(
@@ -28,18 +28,18 @@ def create_subtask(
         current_user: User = Depends(get_current_user)):
 
     # Verificar que la tarea existe y pertenece al usuario
-    task = db.query(Task)\
-        .join(LifeContext)\
-            .filter(Task.id == subtask.task_id,
-        LifeContext.user_id == current_user.id)\
-            .first()
+    task = db.query(Task).filter(
+        Task.id == subtask.task_id,
+        Task.context.has(LifeContext.user_id == current_user.id)
+        ).first()
 
     if not task:
-        raise HTTPException(status_code=403, detail="No puede crear subtareas para esta tarea")
+        raise HTTPException(status_code=404, detail="Task no encontrada o sin permiso")
 
    # Crear la subtarea
     db_subtask = SubTask(
         title=subtask.title,
+        is_completed=subtask.is_completed,
         task_id=subtask.task_id
     )
 
@@ -55,13 +55,14 @@ Solo se devuelven las subtareas que pertenecen a las tareas de los contextos del
 """
 @router.get("/", response_model=List[SubtaskResponse])
 def get_subtasks(
-    skip: int = 0, limit: int = 10,
+    skip: int = 0,
+    limit: int = 10,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user)):
 
     subtasks = db.query(SubTask)\
-        .join(Task)\
-        .join(LifeContext)\
+        .join(SubTask.task)\
+        .join(Task.context)\
         .filter(LifeContext.user_id == current_user.id)\
         .offset(skip)\
             .limit(limit)\
@@ -80,14 +81,45 @@ def get_subtask(
         current_user: User = Depends(get_current_user)):
 
     subtask = db.query(SubTask)\
-        .join(Task)\
-        .join(LifeContext)\
-        .filter(SubTask.id == subtask_id,
-                LifeContext.user_id == current_user.id)\
+        .join(SubTask.task)\
+        .join(Task.context)\
+        .filter(
+            SubTask.id == subtask_id,
+            LifeContext.user_id == current_user.id)\
         .first()
 
     if not subtask:
         raise HTTPException(status_code=404, detail="Subtarea no encontrada o no tiene acceso")
+    return subtask
+
+
+"""
+Actualizamos el estado de una subtarea específica por su ID,
+verificando que pertenece al usuario actual.
+"""
+@router.patch("/{subtask_id}", response_model=SubtaskResponse)
+def update_subtask(
+    subtask_id: int,
+    subtask_update: SubtaskBase,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)):
+
+    subtask = db.query(SubTask)\
+        .join(SubTask.task)\
+        .join(Task.context)\
+        .filter(
+            SubTask.id == subtask_id,
+            LifeContext.user_id == current_user.id)\
+        .first()
+
+    if not subtask:
+        raise HTTPException(status_code=404, detail="Subtarea no encontrada o no tiene acceso")
+
+    subtask.title = subtask_update.title
+    subtask.is_completed = subtask_update.is_completed
+
+    db.commit()
+    db.refresh(subtask)
     return subtask
 
 
@@ -102,15 +134,17 @@ def delete_subtask(
         current_user: User = Depends(get_current_user)):
 
     subtask = db.query(SubTask)\
-        .join(Task)\
-        .join(LifeContext)\
-        .filter(SubTask.id == subtask_id,
-                LifeContext.user_id == current_user.id)\
+        .join(SubTask.task)\
+        .join(Task.context)\
+        .filter(
+            SubTask.id == subtask_id,
+            LifeContext.user_id == current_user.id)\
         .first()
-    
+
     if not subtask:
         raise HTTPException(status_code=404, detail="Subtarea no encontrada o no tiene acceso")
 
     db.delete(subtask)
     db.commit()
     return {"detail": "Subtarea eliminada exitosamente"}
+
