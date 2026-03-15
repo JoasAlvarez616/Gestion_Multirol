@@ -26,15 +26,15 @@ def create_task(
         LifeContext.id == task.context_id,
         LifeContext.user_id == current_user.id
         ).first()
-    
+
     if not context:
         raise HTTPException(status_code=400,
                             detail="El contexto no existe o no pertenece al usuario")
-    
+
     #Calcular siguiente numero dentro del contexto
     last_task = db.query(Task)\
         .filter(Task.context_id == task.context_id)\
-            .order_by(Task.number.desc())\
+            .order_by(Task.context_task_number.desc())\
                 .first()
 
     next_number = 1 if not last_task else last_task.context_task_number + 1
@@ -43,7 +43,7 @@ def create_task(
     db_task = Task(
         title=task.title,
         description=task.description,
-        status=task.status,
+        status=TaskStatus.pending,
         priority=task.priority,
         due_date=task.due_date,
         context_id=task.context_id,
