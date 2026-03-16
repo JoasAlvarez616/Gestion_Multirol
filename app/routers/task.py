@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from sqlalchemy import func, and_
+from datetime import datetime, timezone, timedelta
 
 from app.database.database import get_db
 from app.models.task import Task
@@ -32,17 +34,15 @@ def create_task(
                             detail="El contexto no existe o no pertenece al usuario")
 
     #Calcular siguiente numero dentro del contexto
-    last_task = db.query(Task)\
+    max_number = db.query(func.max(Task.context_task_number))\
         .filter(Task.context_id == task.context_id)\
-            .order_by(Task.context_task_number.desc())\
-                .first()
+            .scalar()
 
-    next_number = 1 if not last_task else last_task.context_task_number + 1
+    next_number = 1 if max_number is None else max_number + 1
 
     # Creamos la tarea
     db_task = Task(
         title=task.title,
-        description=task.description,
         status=TaskStatus.pending,
         priority=task.priority,
         due_date=task.due_date,
@@ -108,6 +108,46 @@ def get_tasks(
     tasks = query.offset(skip).limit(limit).all()
 
     return tasks
+
+
+"""
+Dashboard de tareas para el día actual,
+mostrando solo las tareas que no están completadas y que tienen fecha de vencimiento hoy o en el pasado.
+Las tareas se ordenan por fecha de vencimiento (las más próximas primero) y luego por prioridad.
+"""
+@router.get("/today", response_model=List[TaskResponse])
+def get_today_tasks(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)):
+
+    now = datetime.now(timezone.utc)
+
+    # Calculamos el inicio y fin del día actual
+    end_of_day = datetime(
+        year=now.year, 
+        month=now.month, 
+        day=now.day, 
+        hour=23, 
+        minute=59, 
+        second=59, 
+        tzinfo=timezone.utc)
+
+    tasks = db.query(Task)\
+        .join(LifeContext)\
+            .filter(
+                LifeContext.user_id == current_user.id,
+                Task.status != TaskStatus.completed,
+                Task.due_date != None,
+                Task.due_date <= end_of_day
+    )\
+    .order_by(
+        Task.due_date.asc(),
+        Task.priority.desc(),
+    )\
+    .all()
+
+    return tasks
+
 
 
 """
@@ -200,7 +240,7 @@ def update_task(
         .first()
 
     if not task:
-        raise HTTPException(status_code=404, 
+        raise HTTPException(status_code=404,
                             detail="Tarea no encontrada o no tiene permiso")
 
     # Actualizamos solo los campos que se proporcionan
