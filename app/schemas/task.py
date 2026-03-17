@@ -50,3 +50,11 @@ class TodayDashboardResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DashboardSummaryResponse(BaseModel):
+    overdue: int
+    today: int
+    upcoming: int
+    total_pending: int
+    completed_today: int

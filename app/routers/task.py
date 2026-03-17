@@ -6,7 +6,7 @@ from datetime import datetime, date, time, timezone, timedelta
 
 from app.database.database import get_db
 from app.models.task import Task
-from app.schemas.task import TaskCreate, TaskResponse, TaskUpdateStatus, TaskUpdate, TaskStatus, TaskPriority, TodayDashboardResponse
+from app.schemas.task import TaskCreate, TaskResponse, TaskUpdateStatus, TaskUpdate, TaskStatus, TaskPriority, TodayDashboardResponse, DashboardSummaryResponse
 from app.models.user import User
 from app.models.lifecontext import LifeContext
 from app.security.dependencies import get_current_user
@@ -181,6 +181,123 @@ def get_today_tasks(
         "today": today_tasks
     }
 
+
+"""
+Dashboard de tareas próximas, mostrando solo las tareas que no están completadas
+y que tienen fecha de vencimiento en los próximos 7 días.
+"""
+@router.get("/upcoming", response_model=List[TaskResponse])
+def get_upcoming_tasks(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)):
+
+    now = datetime.now(timezone.utc)
+
+    #Inicio de mañana
+    start_of_tomorrow = datetime(
+        year=now.year,
+        month=now.month,
+        day=now.day,
+        hour=0,
+        minute=0,
+        second=0,
+        tzinfo=timezone.utc
+    ) + timedelta(days=1)
+
+    #Fin del día dentro de 7 días
+    end_of_range = start_of_tomorrow + timedelta(days=7)
+    
+    tasks = db.query(Task)\
+    .join(LifeContext)\
+    .filter(
+        LifeContext.user_id == current_user.id,
+        Task.status != TaskStatus.completed,
+        Task.due_date != None,
+        Task.due_date >= start_of_tomorrow,
+        Task.due_date <= end_of_range
+    )\
+    .order_by(Task.due_date.asc(),
+              Task.priority.desc())\
+    .all()
+
+    return tasks
+
+
+"""
+
+"""
+@router.get("/dashboard/summary",
+            response_model=DashboardSummaryResponse)
+def get_dashboard_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    now = datetime.now(timezone.utc)
+
+    start_of_day = datetime(
+        year=now.year,
+        month=now.month,
+        day=now.day,
+        hour=0,
+        minute=0,
+        second=0,
+        tzinfo=timezone.utc
+    )
+
+    end_of_day = datetime(
+        year=now.year,
+        month=now.month,
+        day=now.day,
+        hour=23,
+        minute=59,
+        second=59,
+        tzinfo=timezone.utc
+    )
+
+    start_of_tomorrow = start_of_day + timedelta(days=1)
+    end_of_upcoming= start_of_tomorrow + timedelta(days=7)
+
+    base_query = db.query(Task).join(LifeContext).filter(
+        LifeContext.user_id == current_user.id)
+
+
+    overdue = base_query.filter(
+        Task.status != TaskStatus.completed,
+        Task.due_date != None,
+        Task.due_date < start_of_day
+    ).count()
+
+    today = base_query.filter(
+        Task.status != TaskStatus.completed,
+        Task.due_date != None,
+        Task.due_date >= start_of_day,
+        Task.due_date <= end_of_day
+    ).count()
+
+    upcoming = base_query.filter(
+        Task.status != TaskStatus.completed,
+        Task.due_date != None,
+        Task.due_date >= start_of_tomorrow,
+        Task.due_date <= end_of_upcoming
+    ).count()
+
+    total_pending = base_query.filter(
+        Task.status != TaskStatus.completed
+    ).count()
+
+    completed_today = base_query.filter(
+        Task.status == TaskStatus.completed,
+        Task.created_at >= start_of_day,
+        Task.created_at <= end_of_day
+    ).count()
+
+    return {
+        "overdue": overdue,
+        "today": today,
+        "upcoming": upcoming,
+        "total_pending": total_pending,
+        "completed_today": completed_today
+    }
 
 """
 Obtenemos una tarea específica por su ID, verificando que pertenece al usuario actual.
