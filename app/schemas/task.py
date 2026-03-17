@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Union
+from typing import Optional, Union, List
 from datetime import datetime, date
 from enum import Enum
 
@@ -31,11 +31,22 @@ class TaskResponse(TaskBase):
     context_id: int
     created_at: datetime
 
+    class Config:
+        from_attributes = True
+
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     priority: Optional[TaskPriority] = None
     due_date: Optional[Union[datetime, date]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TodayDashboardResponse(BaseModel):
+    overdue: List[TaskResponse]
+    today: List[TaskResponse]
 
     class Config:
         from_attributes = True

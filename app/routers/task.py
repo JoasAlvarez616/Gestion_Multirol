@@ -6,7 +6,7 @@ from datetime import datetime, date, time, timezone, timedelta
 
 from app.database.database import get_db
 from app.models.task import Task
-from app.schemas.task import TaskCreate, TaskResponse, TaskUpdateStatus,TaskUpdate, TaskStatus, TaskPriority
+from app.schemas.task import TaskCreate, TaskResponse, TaskUpdateStatus, TaskUpdate, TaskStatus, TaskPriority, TodayDashboardResponse
 from app.models.user import User
 from app.models.lifecontext import LifeContext
 from app.security.dependencies import get_current_user
@@ -127,7 +127,7 @@ Dashboard de tareas para el día actual,
 mostrando solo las tareas que no están completadas y que tienen fecha de vencimiento hoy o en el pasado.
 Las tareas se ordenan por fecha de vencimiento (las más próximas primero) y luego por prioridad.
 """
-@router.get("/today", response_model=List[TaskResponse])
+@router.get("/today", response_model=TodayDashboardResponse)
 def get_today_tasks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)):
@@ -135,31 +135,51 @@ def get_today_tasks(
     now = datetime.now(timezone.utc)
 
     # Calculamos el inicio y fin del día actual
-    end_of_day = datetime(
+    stat_of_day = datetime(
         year=now.year, 
         month=now.month, 
         day=now.day, 
-        hour=23, 
-        minute=59, 
-        second=59, 
-        tzinfo=timezone.utc)
+        hour=0, 
+        minute=0, 
+        second=0, 
+        tzinfo=timezone.utc
+        )
 
-    tasks = db.query(Task)\
-        .join(LifeContext)\
-            .filter(
-                LifeContext.user_id == current_user.id,
-                Task.status != TaskStatus.completed,
-                Task.due_date != None,
-                Task.due_date <= end_of_day
-    )\
-    .order_by(
-        Task.due_date.asc(),
-        Task.priority.desc(),
-    )\
-    .all()
+    end_of_day = datetime(
+        year=now.year,
+        month=now.month,
+        day=now.day,
+        hour=23,
+        minute=59,
+        second=59,
+        tzinfo=timezone.utc
+        )
 
-    return tasks
+    base_query = db.query(Task)\
+    .join(LifeContext)\
+    .filter(
+        LifeContext.user_id == current_user.id,
+        Task.status != TaskStatus.completed,
+        Task.due_date != None
+    )
 
+    overdue_tasks = base_query\
+    .filter(Task.due_date < stat_of_day)\
+        .order_by(Task.due_date.asc(),
+                  Task.priority.desc())\
+                    .all()
+
+    today_tasks = base_query\
+    .filter(Task.due_date >= stat_of_day,
+            Task.due_date <= end_of_day)\
+                .order_by(Task.due_date.asc(),
+                            Task.priority.desc())\
+                            .all()
+
+    return {
+        "overdue": overdue_tasks,
+        "today": today_tasks
+    }
 
 
 """
