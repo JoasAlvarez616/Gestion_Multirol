@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy import func, and_
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, date, time, timezone, timedelta
 
 from app.database.database import get_db
 from app.models.task import Task
@@ -40,12 +40,24 @@ def create_task(
 
     next_number = 1 if max_number is None else max_number + 1
 
+
+    due_date= task.due_date
+    if due_date is not None:
+        #Si la hora es exactamente 00:00:00,
+        #la ajustamos a 23:59 del mismo día para que se muestre en el dashboard de tareas de hoy
+        if(
+            due_date.hour==0
+            and due_date.minute==0
+            and due_date.second==0
+        ):
+            due_date = due_date.replace(hour=23, minute=59)
+
     # Creamos la tarea
     db_task = Task(
         title=task.title,
         status=TaskStatus.pending,
         priority=task.priority,
-        due_date=task.due_date,
+        due_date=due_date,
         context_id=task.context_id,
         context_task_number=next_number
     )
@@ -254,7 +266,17 @@ def update_task(
         task.priority = task_update.priority
 
     if task_update.due_date is not None:
-        task.due_date = task_update.due_date
+        due_date = task_update.due_date
+
+        #Si la hora es exactamente 00:00:00,
+        #la ajustamos a 23:59 del mismo día para que se muestre en el dashboard de tareas de hoy
+        if(
+            due_date.hour==0
+            and due_date.minute==0
+            and due_date.second==0
+        ):
+            due_date = due_date.replace(hour=23, minute=59)
+            task.due_date = due_date
 
     db.commit()
     db.refresh(task)

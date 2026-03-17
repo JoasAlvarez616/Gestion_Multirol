@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
+from typing import Optional, Union
+from datetime import datetime, date
 from enum import Enum
 
 class TaskStatus(str, Enum):
@@ -17,7 +17,7 @@ class TaskBase(BaseModel):
     title: str
     description: Optional[str] = None
     priority: TaskPriority = TaskPriority.medium
-    due_date: Optional[datetime] = None
+    due_date: Optional[Union[datetime, date]] = None
 
 class TaskCreate(TaskBase):
     context_id: int
@@ -35,7 +35,7 @@ class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     priority: Optional[TaskPriority] = None
-    due_date: Optional[datetime] = None
+    due_date: Optional[Union[datetime, date]] = None
 
     class Config:
         from_attributes = True
