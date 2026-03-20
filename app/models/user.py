@@ -1,15 +1,24 @@
 from app.database.database import Base
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    name = Column(String, nullable=False)
 
-    contexts = relationship("LifeContext", back_populates="user", cascade="all, delete-orphan")
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    ownedr = relationship(
+        "User",
+        back_populates="owned_contexts")
+
+    members = relationship(
+        "User",
+        secondary="context_members",
+        back_populates="member_contexts")
+
+    tasks = relationship(
+        "Task",
+        back_populates="context")

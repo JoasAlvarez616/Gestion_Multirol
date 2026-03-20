@@ -224,7 +224,9 @@ def get_upcoming_tasks(
 
 
 """
-
+Dashboard resumen de tareas, mostrando el número de tareas vencidas,
+vencen hoy, próximas a vencer,
+total pendientes y completadas hoy.
 """
 @router.get("/dashboard/summary",
             response_model=DashboardSummaryResponse)

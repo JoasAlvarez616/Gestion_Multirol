@@ -38,3 +38,6 @@ class Task(Base):
 
     # Relación con SubTasks
     subtasks = relationship("SubTask", back_populates="task", cascade="all, delete-orphan")
+
+    # Relación con Tags a través de la tabla de asociación task_tags
+    tags = relationship("Tag", secondary="task_tags", back_populates="tasks")
