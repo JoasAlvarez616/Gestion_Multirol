@@ -30,7 +30,7 @@ def create_subtask(
     # Verificar que la tarea existe y pertenece al usuario
     task = db.query(Task).filter(
         Task.id == subtask.task_id,
-        Task.context.has(LifeContext.user_id == current_user.id)
+        Task.context.has(LifeContext.owner_id == current_user.id)
         ).first()
 
     if not task:
@@ -63,7 +63,7 @@ def get_subtasks(
     subtasks = db.query(SubTask)\
         .join(SubTask.task)\
         .join(Task.context)\
-        .filter(LifeContext.user_id == current_user.id)\
+        .filter(LifeContext.owner_id == current_user.id)\
         .offset(skip)\
             .limit(limit)\
                 .all()
@@ -85,7 +85,7 @@ def get_subtask(
         .join(Task.context)\
         .filter(
             SubTask.id == subtask_id,
-            LifeContext.user_id == current_user.id)\
+            LifeContext.owner_id == current_user.id)\
         .first()
 
     if not subtask:
@@ -109,7 +109,7 @@ def update_subtask(
         .join(Task.context)\
         .filter(
             SubTask.id == subtask_id,
-            LifeContext.user_id == current_user.id)\
+            LifeContext.owner_id == current_user.id)\
         .first()
 
     if not subtask:
@@ -138,7 +138,7 @@ def delete_subtask(
         .join(Task.context)\
         .filter(
             SubTask.id == subtask_id,
-            LifeContext.user_id == current_user.id)\
+            LifeContext.owner_id == current_user.id)\
         .first()
 
     if not subtask:

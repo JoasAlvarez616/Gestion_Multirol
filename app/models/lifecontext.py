@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime, UniqueConstraint
 from datetime import datetime, timezone
 from sqlalchemy.orm import relationship
 from app.database.database import Base
@@ -8,6 +8,7 @@ class LifeContext(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    description=Column(Text, nullable=True)
 
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 

@@ -13,7 +13,7 @@ class LifeContextCreate(LifeContextBase):
 
 class LifeContextResponse(LifeContextBase):
     id: int
-    user_id: int
+    owner_id: int
     created_at: datetime
 
     class Config:

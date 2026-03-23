@@ -18,7 +18,7 @@ def create_context(context: LifeContextCreate, db: Session = Depends(get_db),
     new_context = LifeContext(
         name=context.name,
         description=context.description,
-        user_id=current_user.id
+        owner_id=current_user.id
     )
 
     db.add(new_context)
@@ -30,14 +30,14 @@ def create_context(context: LifeContextCreate, db: Session = Depends(get_db),
 def get_my_contexts(db: Session = Depends(get_db), 
                     current_user: User = Depends(get_current_user)):
     return db.query(LifeContext).filter(
-        LifeContext.user_id == current_user.id).all()
+        LifeContext.owner_id == current_user.id).all()
 
 @router.get("/{context_id}", response_model=LifeContextResponse)
 def get_context(context_id: int, db: Session = Depends(get_db),
                 current_user: User = Depends(get_current_user)):
         context = db.query(LifeContext).filter(
         LifeContext.id == context_id,
-        LifeContext.user_id == current_user.id
+        LifeContext.owner_id == current_user.id
     ).first()
         
         if not context:

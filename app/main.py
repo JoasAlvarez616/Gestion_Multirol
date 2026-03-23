@@ -1,7 +1,13 @@
 from fastapi import FastAPI
 from app.database.database import Base, engine
 from app.routers import user, auth, lifecontext, task, subtask
-
+from app.models.user import User
+from app.models.lifecontext import LifeContext
+from app.models.task import Task
+from app.models.tag import Tag
+from app.models.subtask import SubTask
+from app.models.task_tag import task_tags
+from app.models.context_member import context_members
 
 # ==============================
 # Inicializar FastAPI

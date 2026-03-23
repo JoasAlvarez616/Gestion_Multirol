@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, or_
 from datetime import datetime, date, time, timezone, timedelta
 
 from app.database.database import get_db
@@ -10,6 +10,12 @@ from app.schemas.task import TaskCreate, TaskResponse, TaskUpdateStatus, TaskUpd
 from app.models.user import User
 from app.models.lifecontext import LifeContext
 from app.security.dependencies import get_current_user
+
+def user_has_access_condition(current_user: User):
+    return or_(
+        LifeContext.owner_id == current_user.id,
+        LifeContext.members.any(User.id == current_user.id)
+    )
 
 router = APIRouter(
     prefix="/tasks",
@@ -26,7 +32,7 @@ def create_task(
     # Verificamos que el contexto al que se asigna la tarea pertenece al usuario actual
     context = db.query(LifeContext).filter(
         LifeContext.id == task.context_id,
-        LifeContext.user_id == current_user.id
+        user_has_access_condition(current_user)
         ).first()
 
     if not context:
@@ -85,7 +91,7 @@ def get_tasks(
     current_user: User = Depends(get_current_user)):
 
     query = db.query(Task).join(LifeContext).filter(
-        LifeContext.user_id == current_user.id)
+        user_has_access_condition(current_user))
 
     if status:
         query = query.filter(Task.status == status)
@@ -158,7 +164,7 @@ def get_today_tasks(
     base_query = db.query(Task)\
     .join(LifeContext)\
     .filter(
-        LifeContext.user_id == current_user.id,
+        user_has_access_condition(current_user),
         Task.status != TaskStatus.completed,
         Task.due_date != None
     )
@@ -210,7 +216,7 @@ def get_upcoming_tasks(
     tasks = db.query(Task)\
     .join(LifeContext)\
     .filter(
-        LifeContext.user_id == current_user.id,
+        user_has_access_condition(current_user),
         Task.status != TaskStatus.completed,
         Task.due_date != None,
         Task.due_date >= start_of_tomorrow,
@@ -260,7 +266,7 @@ def get_dashboard_summary(
     end_of_upcoming= start_of_tomorrow + timedelta(days=7)
 
     base_query = db.query(Task).join(LifeContext).filter(
-        LifeContext.user_id == current_user.id)
+        user_has_access_condition(current_user))
 
 
     overdue = base_query.filter(
@@ -313,7 +319,7 @@ def get_task(
 
     task = db.query(Task)\
         .join(LifeContext)\
-            .filter(Task.id == task_id, LifeContext.user_id == current_user.id)\
+            .filter(Task.id == task_id, user_has_access_condition(current_user))\
                 .first()
 
     if not task:
@@ -333,7 +339,7 @@ def delete_task(
 
     task = db.query(Task)\
         .join(LifeContext)\
-            .filter(Task.id == task_id, LifeContext.user_id == current_user.id)\
+            .filter(Task.id == task_id, user_has_access_condition(current_user))\
             .first()
     if not task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada o no tiene acceso")
@@ -359,7 +365,7 @@ def update_task_status(
         .join(LifeContext)\
         .filter(
         Task.id == task_id,
-        LifeContext.user_id == current_user.id)\
+        user_has_access_condition(current_user))\
         .first()
 
     if not task:
@@ -387,7 +393,7 @@ def update_task(
         .join(LifeContext)\
         .filter(
         Task.id == task_id,
-        LifeContext.user_id == current_user.id)\
+        user_has_access_condition(current_user))\
         .first()
 
     if not task:
